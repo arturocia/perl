@@ -15,8 +15,10 @@ use Trapper;
 my $logger;
 my $sel;
 my $url;
+my @datos_prueba;
 
-my $auto_close = 0;
+my $auto_close             = 0;
+my $archivo_datos_registro = "gangnam.csv";
 
 Log::Log4perl::init("./caca.properties");
 tie *STDERR, "Trapper";
@@ -60,6 +62,10 @@ if ( !$sel ) {
 }
 
 $url = "http://localhost:8080/bespcaca/login.jsp";
+
+tie @datos_prueba, 'Tie::Array::CSV',
+  { file => $archivo_datos_registro, binary => 1 };
+$logger->trace( "el archivo de mierda es " . Dumper \@datos_prueba );
 
 exit;
 
