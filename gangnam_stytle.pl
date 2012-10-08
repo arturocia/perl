@@ -12,13 +12,31 @@ use Error qw(:try);
 use Tie::Array::CSV;
 use Trapper;
 
+use constant {
+	INDEX_NOMBRE_PROY             => 0,
+	INDEX_SIGLAS                  => 1,
+	INDEX_RESUMEN                 => 2,
+	INDEX_OBJETIVO                => 3,
+	INDEX_COSTO                   => 4,
+	INDEX_PERIODO                 => 5,
+	INDEX_ESTRUCTURA_SECTORIAL    => 0,
+	INDEX_ESTRUCTURA_NO_SECTORIAL => 1,
+	INDEX_EJE                     => 2,
+	INDEX_TEMA                    => 3
+};
+
 my $logger;
 my $sel;
-my $url;
-my @datos_prueba;
+my $dominio;
+my @datos_registro;
+my @datos_alineacion;
 
-my $auto_close             = 0;
-my $archivo_datos_registro = "gangnam.csv";
+my $auto_close               = 0;
+my $archivo_datos_registro   = "gangnam.csv";
+my $archivo_datos_alineacion = "style.csv";
+my $pag_login                = "login.jsp";
+my $pag_registro             = "registrar-proyecto";
+my $indice_prueba            = 0;
 
 Log::Log4perl::init("./caca.properties");
 tie *STDERR, "Trapper";
@@ -61,15 +79,17 @@ if ( !$sel ) {
 	  };
 }
 
-$url = "http://localhost:8080/bespcaca/login.jsp";
-
-tie @datos_prueba, 'Tie::Array::CSV',
+tie @datos_registro, 'Tie::Array::CSV',
   { file => $archivo_datos_registro, binary => 1 };
-$logger->trace( "el archivo de mierda es " . Dumper \@datos_prueba );
+tie @datos_alineacion, 'Tie::Array::CSV',
+  { file => $archivo_datos_alineacion, binary => 1 };
+$logger->trace( "el archivo de mierda es " . Dumper \@datos_registro );
 
-exit;
+$dominio = "localhost:8080/bespcaca";
 
-$sel->get($url);
+#$sel->set_implicit_wait_timeout(10000);
+
+$sel->get( "http://" . $dominio . "/" . $pag_login );
 
 #http://148.204.56.138:8094/besp1/
 #busca un elemento html por nombre
@@ -78,38 +98,54 @@ $sel->find_element("//input[\@name='userId']")->send_keys("coor");
 
 $sel->find_element("//input[\@name='password']")->send_keys("coor");
 
-$sel->find_element("//input[\@name='yo']")->click;
+$sel->find_element("//input[\@id='votoLatino']")->click;
 
-$sel->get("http://localhost:8081/bespPuta/registrar-proyecto/");
+$sel->find_element("//a[\@id='lnkRegistrarProyecto']")->click;
 
-$sel->find_element("//input[\@name='model.nombre']")
-  ->send_keys("Proyecto MASIOSARE");
+for (
+	$indice_prueba = 1 ;
+	$indice_prueba < scalar(@datos_registro) ;
+	$indice_prueba++
+  )
+{
+	my @fila_alineacion = $datos_alineacion[$indice_prueba];
+	my @fila_registro   = $datos_registro[$indice_prueba];
 
-$sel->find_element("//input[\@name='model.siglas']")->send_keys("PM");
+	$logger->debug("Fuck");
 
-$sel->find_element("//textarea[\@name='model.resumen']")
-  ->send_keys("Proyectoestrella");
+	$sel->find_element("//input[\@name='model.nombre']")
+	  ->send_keys( $fila_registro[ (INDEX_NOMBRE_PROY) ] );
 
-$sel->find_element("//textarea[\@name='model.objetivoGeneral']")
-  ->send_keys("Registrar un nuevo proyecto");
+	$sel->find_element("//input[\@name='model.siglas']")
+	  ->send_keys( $fila_registro[INDEX_SIGLAS] );
 
-$sel->find_element("//input[\@name='model.costoTotal']")->send_keys("1005000");
+	$sel->find_element("//textarea[\@name='model.resumen']")
+	  ->send_keys( $fila_registro[INDEX_RESUMEN] );
 
-$sel->find_element("//input[\@id='indefinido']")->click;
+	$sel->find_element("//textarea[\@name='model.objetivoGeneral']")
+	  ->send_keys( $fila_registro[INDEX_OBJETIVO] );
 
-$sel->find_element("//input[\@id='btnAceptar']")->click;
+	$sel->find_element("//input[\@name='model.costoTotal']")
+	  ->send_keys( $fila_registro[INDEX_COSTO] );
 
-#boton de alinear proyecto
-$sel->find_element("//a[\@id='btnEditar']")->click;
+	$sel->find_element("//input[\@id='indefinido']")->click;
 
-sleep 5;
+	$sel->find_element("//input[\@id='btnAceptar']")->click;
 
-#check para activar la agenda ambiental(programa sectorial)
-$sel->find_element("//input[\@name='alineacionSectorial']")->click;
+	#boton de alinear proyecto
+	$sel->find_element("//a[\@id='btnEditar']")->click;
 
-$sel->find_element("//CSS[\@jstree-icon ui-icon ui-icon-triangle-1-e']")->click;
+	if ( $fila_alineacion[INDEX_ESTRUCTURA_SECTORIAL] ) {
 
-sleep 20;
+		#check para activar la agenda ambiental(programa sectorial)
+		$sel->find_element("//input[\@name='alineacionSectorial']")->click;
+	}
+	if ( $fila_alineacion[INDEX_ESTRUCTURA_NO_SECTORIAL] ) {
+		$sel->find_element("//input[\@name='alineacion']")->click;
+	}
+
+	sleep 20;
+}
 
 $sel->close();
 
