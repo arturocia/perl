@@ -103,8 +103,6 @@ $sel->find_element("//input[\@name='password']")->send_keys("coor");
 
 $sel->find_element("//input[\@id='votoLatino']")->click;
 
-$sel->find_element("//a[\@id='lnkRegistrarProyecto']")->click;
-
 for (
 	$indice_prueba = 1 ;
 	$indice_prueba < scalar(@datos_registro) ;
@@ -114,6 +112,8 @@ for (
 	my @fila_alineacion = @{ $datos_alineacion[$indice_prueba] };
 	my @fila_registro   = @{ $datos_registro[$indice_prueba] };
 	$logger->debug("Fuck");
+
+	$sel->find_element("//a[\@id='lnkRegistrarProyecto']")->click;
 
 	$logger->trace( "La mierda es " . $fila_registro[INDEX_NOMBRE_PROY] );
 	$sel->find_element("//input[\@name='model.nombre']")
