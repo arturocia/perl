@@ -113,7 +113,14 @@ for (
 	my @fila_registro   = @{ $datos_registro[$indice_prueba] };
 	$logger->debug("Fuck");
 
-	$sel->find_element("//a[\@id='lnkRegistrarProyecto']")->click;
+	try { $sel->find_element("//a[\@id='lnkRegistrarProyecto']")->click; }
+	  catch Error with {
+		my $ex = shift;
+		$logger->error(
+"no se pudo empezar un nuevo registro de proyecto ,alguna mierda paso\n$ex"
+		);
+		sleep 6000;
+	  };
 
 	$logger->trace( "La mierda es " . $fila_registro[INDEX_NOMBRE_PROY] );
 	$sel->find_element("//input[\@name='model.nombre']")
@@ -195,12 +202,13 @@ for (
 		)->click;
 		$sel->find_element( "div#divTemas input[value=\"->\"]", "css" )->click;
 	}
+	sleep 10;
 	$sel->find_element("//input[\@id='btnAceptar']")->click;
 }
 
 $sel->close();
 
-#rollback( \@datos_registro, \@datos_alineacion );
+rollback( \@datos_registro, \@datos_alineacion );
 
 sub rollback {
 	my ( $ref_datos_registro, $ref_datos_alineacion ) = @_;
